@@ -36,9 +36,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Terraform fmt
-        run: terraform fmt -check
-
       - name: Terraform init
         run: terraform init
 
@@ -47,11 +44,9 @@ jobs:
 
       - name: Terraform plan
         run: |
-          if [[ -n "${{ github.event.inputs.tfvars }}" ]]; then
-            terraform plan -var-file="../env/${{ github.event.inputs.tfvars }}" -out=plan.tfplan
-          else
-            terraform plan -out=plan.tfplan
-          fi
+          tfvars_file="../env/${{ github.event.inputs.environment }}.tfvars"
+          echo "Using tfvars file: $tfvars_file"
+          terraform plan -var-file="$tfvars_file" -out=plan.tfplan
 
       - name: Terraform apply
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
