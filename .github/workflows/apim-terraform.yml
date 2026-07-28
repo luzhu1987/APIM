@@ -3,10 +3,16 @@ name: APIM Terraform CI/CD
 on:
   workflow_dispatch:
     inputs:
-      tfvars:
-        description: 'Optional tfvars filename under APIM/env, for example cn-int.tfvars'
-        required: false
-        default: ''
+      environment:
+        description: 'Environment name, for example cn-int'
+        required: true
+        type: choice
+        options:
+          - cn-int
+          - cn-pre
+          - cn-prod
+        default: 'cn-int'
+
 
 jobs:
   terraform:
