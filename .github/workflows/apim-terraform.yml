@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: APIM/src
+        working-directory: .
 
     steps:
       - name: Checkout repository
@@ -36,18 +36,54 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set paths for this environment
+        id: set_paths
+        run: |
+          env_name="${{ github.event.inputs.environment }}"
+          case "$env_name" in
+            "cn-prd")
+              SRC_DIR="APIM/APIM/prd-src"
+              ;;
+            *)
+              SRC_DIR="APIM/APIM/int_pre_src"
+              ;;
+          esac
+          # fallback to default src if target directory doesn't exist
+          if [ ! -d "$SRC_DIR" ]; then
+            echo "Directory $SRC_DIR not found, falling back to APIM/APIM/src"
+            SRC_DIR="APIM/APIM/src"
+          fi
+          TFVARS="APIM/APIM/env/${env_name}.tfvars"
+          if [ ! -f "$TFVARS" ]; then
+            echo "Warning: tfvars file not found: $TFVARS" >&2
+          fi
+          echo "SRC_DIR=$SRC_DIR" >> $GITHUB_ENV
+          echo "TFVARS=$TFVARS" >> $GITHUB_ENV
+        shell: bash
+
       - name: Terraform init
-        run: terraform init
+        run: |
+          cd "$SRC_DIR"
+          terraform init
 
       - name: Terraform validate
-        run: terraform validate
+        run: |
+          cd "$SRC_DIR"
+          terraform validate
 
       - name: Terraform plan
         run: |
-          tfvars_file="../env/${{ github.event.inputs.environment }}.tfvars"
-          echo "Using tfvars file: $tfvars_file"
-          terraform plan -var-file="$tfvars_file" -out=plan.tfplan
+          cd "$SRC_DIR"
+          if [ -f "$TFVARS" ]; then
+            echo "Using tfvars file: $TFVARS"
+            terraform plan -var-file="$TFVARS" -out=plan.tfplan
+          else
+            echo "TFVARS not found, running plan without var-file"
+            terraform plan -out=plan.tfplan
+          fi
 
       - name: Terraform apply
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: terraform apply -auto-approve plan.tfplan
+        run: |
+          cd "$SRC_DIR"
+          terraform apply -auto-approve plan.tfplan
