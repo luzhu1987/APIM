@@ -1,14 +1,32 @@
-name: Test workflow
+name: Azure Login Test
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment name, for example cn-int'
-        required: true
-        type: choice
-        options:
-          - cn-int
-          - cn-pre
-          - cn-prod
-        default: 'cn-int'
+  workflow_dispatch: # 这允许你在 GitHub 网页上手动点击按钮来触发运行，非常适合测试
+
+permissions:
+  id-token: write # 【必须】允许工作流请求 OIDC 令牌
+  contents: read  # 【必须】允许工作流读取仓库内容
+
+jobs:
+  hello-azure:
+    runs-on: ubuntu-latest # 使用 GitHub 免费提供的标准运行环境
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 核心步骤：登录 Azure
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        # 下面这三个值，请务必替换成你在 Azure 门户里查到的真实 ID
+        client-id: '8ef3d25d-431a-4739-8bbd-ff83b70cf163'
+        tenant-id: 'a346099f-656d-4020-85b1-3dab26bdf2d3'
+        subscription-id: '22fee5d6-97b9-498c-aa24-6b5458a7c7bf'
+
+    # 验证步骤：如果登录成功，执行一段简单的 Azure CLI 命令，并打印 Hello World
+    - name: Run Hello World on Azure
+      run: |
+        echo "Hello World! 成功登录 Azure！"
+        echo "当前登录的 Azure 账号信息如下："
+        az account show
