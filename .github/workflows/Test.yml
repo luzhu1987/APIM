@@ -1,0 +1,14 @@
+name: Test workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment name, for example cn-int'
+        required: true
+        type: choice
+        options:
+          - cn-int
+          - cn-pre
+          - cn-prod
+        default: 'cn-int'
